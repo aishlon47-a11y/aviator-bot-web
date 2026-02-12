@@ -1,0 +1,28 @@
+.stApp {
+    background-color: #0e1117;
+}
+
+.header {
+    text-align: center;
+    padding: 20px 0;
+}
+
+.card {
+    background: #1e2130;
+    padding: 30px;
+    border-radius: 20px;
+    text-align: center;
+    border: 1px solid #333;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    margin: 20px 0;
+}
+
+button[kind="primary"] {
+    background-color: #ff2b2b !important;
+    width: 100%;
+}
+
+.stNumberInput input {
+    background-color: #1e2130 !important;
+    color: white !important;
+}
