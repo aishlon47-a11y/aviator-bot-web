@@ -1,65 +1,49 @@
 import streamlit as st
-import pandas as pd
-import os
+import datetime
 from predictor import AviatorPredictor
 
-# Configuration de la page
-st.set_page_config(
-    page_title="Aviator Bot Pro",
-    page_icon="✈️",
-    layout="centered"
+st.set_page_config(page_title="Aviator Signal Pro", layout="centered")
+
+# --- BARRE LATÉRALE (Sélecteur de Bookmaker) ---
+st.sidebar.image("https://cdn-icons-png.flaticon.com/512/732/732200.png", width=50)
+bookmaker = st.sidebar.selectbox(
+    "SÉLECTIONNER LE BOOKMAKER",
+    ("1xBet", "Melbet", "Betclic", "Betwinner", "PremierBet")
 )
+st.sidebar.write(f"**Mode :** Synchronisation {bookmaker}")
+st.sidebar.markdown("---")
+st.sidebar.write("⚠️ *Attendez le signal exact.*")
 
-# Chargement du CSS personnalisé
-def local_css(file_name):
-    if os.path.exists(file_name):
-        with open(file_name, "r") as f:
-            st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
-
-local_css("static/style.css")
-
-# Initialisation du prédicteur
+# --- LOGIQUE DE SESSION ---
+if 'predictor' not in st.session_state:
+    st.session_state.predictor = AviatorPredictor()
 if 'history' not in st.session_state:
     st.session_state.history = []
-    st.session_state.predictor = AviatorPredictor()
 
-# Header
-st.markdown('<div class="header"><h1>✈️ AVIATOR <span style="color:#ff2b2b">PRO</span></h1></div>', unsafe_allow_html=True)
+st.markdown(f'<h1 style="text-align:center;">{bookmaker.upper()} <span style="color:#ff0040">LIVE</span></h1>', unsafe_allow_html=True)
 
-# Zone de saisie
-with st.container():
-    col1, col2 = st.columns([2,1])
-    with col1:
-        val = st.number_input("Entrez le dernier crash :", min_value=1.0, step=0.01, format="%.2f")
-    with col2:
-        st.write("##") # Espacement
-        if st.button("AJOUTER"):
-            st.session_state.history.append(val)
-            if len(st.session_state.history) > 30:
-                st.session_state.history.pop(0)
+# Entrée des données
+val = st.number_input("Dernier multiplicateur (ex: 1.85) :", min_value=1.0, step=0.01)
+if st.button("CALCULER LE PROCHAIN SIGNAL"):
+    st.session_state.history.append(val)
+    if len(st.session_state.history) > 10: st.session_state.history.pop(0)
 
-# Dashboard de résultat
+# --- AFFICHAGE DU SIGNAL HORAIRE ---
 if len(st.session_state.history) >= 3:
-    prediction, confidence = st.session_state.predictor.analyze(st.session_state.history)
+    pred, conf, delay_sec = st.session_state.predictor.analyze(st.session_state.history, bookmaker)
     
-    st.markdown(f"""
-    <div class="card">
-        <p style="margin:0; color:#aaa; text-transform:uppercase; font-size:12px;">Prochain crash estimé</p>
-        <h1 style="color:#00ff88; font-size:4rem; margin:10px 0;">x {prediction:.2f}</h1>
-        <div style="background:#333; height:8px; border-radius:5px;">
-            <div style="background:#00ff88; width:{confidence}%; height:100%; border-radius:5px;"></div>
-        </div>
-        <p style="margin-top:10px; font-size:14px;">Indice de confiance : {confidence}%</p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Graphique de tendance
-    st.subheader("📈 Historique")
-    st.line_chart(st.session_state.history[-15:])
-else:
-    st.info("💡 Ajoutez au moins 3 valeurs pour lancer l'algorithme d'IA.")
+    # Calcul de l'heure du signal (Heure actuelle + délai calculé)
+    signal_time = datetime.datetime.now() + datetime.timedelta(seconds=delay_sec)
+    time_str = signal_time.strftime("%H:%M:%S")
 
-# Bouton réinitialiser
-if st.sidebar.button("Effacer l'historique"):
-    st.session_state.history = []
-    st.rerun()
+    st.markdown(f"""
+        <div style="background:#1e1e26; padding:20px; border-radius:15px; border:2px solid #ff0040; text-align:center;">
+            <h3 style="color:white; margin:0;">SIGNAL DÉTECTÉ</h3>
+            <p style="color:#aaa;">Préparez votre mise pour :</p>
+            <h1 style="color:#00ff88; font-size:3.5rem; margin:10px 0;">{time_str}</h1>
+            <p style="color:white;">Cote estimée : <b>x {pred:.2f}</b></p>
+            <small style="color:#555;">Confiance : {conf}%</small>
+        </div>
+    """, unsafe_allow_html=True)
+else:
+    st.info("Entrez les 3 derniers résultats pour générer le signal horaire.")
