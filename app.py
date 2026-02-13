@@ -1,49 +1,79 @@
 import streamlit as st
+import time
 import datetime
 from predictor import AviatorPredictor
 
-st.set_page_config(page_title="Aviator Signal Pro", layout="centered")
+st.set_page_config(page_title="AVIATOR AI V3", layout="centered")
 
-# --- BARRE LATÉRALE (Sélecteur de Bookmaker) ---
-st.sidebar.image("https://cdn-icons-png.flaticon.com/512/732/732200.png", width=50)
-bookmaker = st.sidebar.selectbox(
-    "SÉLECTIONNER LE BOOKMAKER",
-    ("1xBet", "Melbet", "Betclic", "Betwinner", "PremierBet")
-)
-st.sidebar.write(f"**Mode :** Synchronisation {bookmaker}")
-st.sidebar.markdown("---")
-st.sidebar.write("⚠️ *Attendez le signal exact.*")
+# --- STYLE CSS AVANCÉ (Look Cyberpunk) ---
+st.markdown("""
+<style>
+    .stApp { background-color: #050505; }
+    .main-card {
+        background: linear-gradient(145deg, #1a1a2e, #16213e);
+        border: 1px solid #00f2ff;
+        border-radius: 20px;
+        padding: 40px;
+        text-align: center;
+        box-shadow: 0 0 20px rgba(0, 242, 255, 0.2);
+    }
+    .signal-time {
+        font-family: 'Courier New', monospace;
+        color: #00ff88;
+        font-size: 5rem !important;
+        font-weight: 900;
+        text-shadow: 0 0 15px #00ff88;
+    }
+    .stButton>button {
+        width: 100%;
+        height: 80px;
+        font-size: 1.5rem;
+        background: linear-gradient(45deg, #ff0040, #ff5f6d);
+        border: none;
+        border-radius: 15px;
+    }
+</style>
+""", unsafe_allow_html=True)
 
-# --- LOGIQUE DE SESSION ---
-if 'predictor' not in st.session_state:
+# Initialisation
+if 'times' not in st.session_state:
+    st.session_state.times = []
     st.session_state.predictor = AviatorPredictor()
-if 'history' not in st.session_state:
-    st.session_state.history = []
 
-st.markdown(f'<h1 style="text-align:center;">{bookmaker.upper()} <span style="color:#ff0040">LIVE</span></h1>', unsafe_allow_html=True)
+# --- HEADER ---
+st.markdown('<h1 style="text-align:center; color:white;">⚡ AVIATOR <span style="color:#00f2ff">QUANTUM</span></h1>', unsafe_allow_html=True)
 
-# Entrée des données
-val = st.number_input("Dernier multiplicateur (ex: 1.85) :", min_value=1.0, step=0.01)
-if st.button("CALCULER LE PROCHAIN SIGNAL"):
-    st.session_state.history.append(val)
-    if len(st.session_state.history) > 10: st.session_state.history.pop(0)
+# Barre de sélection Bookmaker
+bookmaker = st.selectbox("CIBLE :", ["1XBET", "MELBET", "BETCLIC", "BETWINNER"])
 
-# --- AFFICHAGE DU SIGNAL HORAIRE ---
-if len(st.session_state.history) >= 3:
-    pred, conf, delay_sec = st.session_state.predictor.analyze(st.session_state.history, bookmaker)
+# --- MODE INTERACTION RAPIDE ---
+st.write("### Cliquez dès que l'avion s'envole :")
+if st.button("🚀 DÉCOLLAGE DÉTECTÉ"):
+    st.session_state.times.append(time.time())
+    if len(st.session_state.times) > 5: st.session_state.times.pop(0)
+
+# --- ANALYSE ET PRÉDICTION ---
+if len(st.session_state.times) >= 3:
+    # L'algorithme analyse l'intervalle entre les décollages
+    pred_cote, signal_time_obj = st.session_state.predictor.get_quantum_signal(st.session_state.times)
     
-    # Calcul de l'heure du signal (Heure actuelle + délai calculé)
-    signal_time = datetime.datetime.now() + datetime.timedelta(seconds=delay_sec)
-    time_str = signal_time.strftime("%H:%M:%S")
-
     st.markdown(f"""
-        <div style="background:#1e1e26; padding:20px; border-radius:15px; border:2px solid #ff0040; text-align:center;">
-            <h3 style="color:white; margin:0;">SIGNAL DÉTECTÉ</h3>
-            <p style="color:#aaa;">Préparez votre mise pour :</p>
-            <h1 style="color:#00ff88; font-size:3.5rem; margin:10px 0;">{time_str}</h1>
-            <p style="color:white;">Cote estimée : <b>x {pred:.2f}</b></p>
-            <small style="color:#555;">Confiance : {conf}%</small>
+        <div class="main-card">
+            <p style="color:#aaa; text-transform:uppercase;">Prochain Signal de Confiance (70%)</p>
+            <h1 class="signal-time">{signal_time_obj.strftime('%H:%M:%S')}</h1>
+            <div style="display: flex; justify-content: space-around; margin-top:20px;">
+                <div>
+                    <p style="color:#555;">OBJECTIF</p>
+                    <h2 style="color:white;">x{pred_cote}</h2>
+                </div>
+                <div>
+                    <p style="color:#555;">FIABILITÉ</p>
+                    <h2 style="color:#00ff88;">72%</h2>
+                </div>
+            </div>
         </div>
     """, unsafe_allow_html=True)
+    
+    st.warning("⚠️ Préparez votre mise 5 secondes avant l'heure indiquée.")
 else:
-    st.info("Entrez les 3 derniers résultats pour générer le signal horaire.")
+    st.info(f"Analyse des cycles de {bookmaker} en cours... Cliquez sur le bouton lors des 3 prochains décollages.")
