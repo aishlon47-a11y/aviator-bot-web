@@ -1,34 +1,24 @@
 import numpy as np
-import random
+import datetime
 
 class AviatorPredictor:
-    def analyze(self, history, platform):
-        data = np.array(history)
+    def get_quantum_signal(self, time_history):
+        # Calcul des intervalles entre les vols précédents
+        intervals = np.diff(time_history)
+        avg_interval = np.mean(intervals)
         
-        # Ajustement des algorithmes selon le bookmaker (simulation de latence serveur)
-        offsets = {
-            "1xBet": 0.32,
-            "Melbet": 0.28,
-            "Betclic": 0.45,
-            "Betwinner": 0.30,
-            "PremierBet": 0.35
-        }
+        # Simulation d'un cycle algorithmique (Pattern de 70%)
+        # On ajoute un délai basé sur la moyenne pondérée
+        next_signal_delay = avg_interval + 2.0  # Ajustement sécurité
         
-        margin = offsets.get(platform, 0.3)
-        w_avg = np.average(data, weights=np.arange(1, len(data) + 1))
-        volatility = np.std(data)
+        # Prédiction de la cote basée sur la densité des intervalles
+        # Si les intervalles sont courts, la cote est basse. S'ils sont longs, elle monte.
+        if avg_interval < 30:
+            pred_cote = round(np.random.uniform(1.20, 1.45), 2)
+        else:
+            pred_cote = round(np.random.uniform(1.50, 2.10), 2)
+            
+        signal_timestamp = time_history[-1] + next_signal_delay
+        signal_time_obj = datetime.datetime.fromtimestamp(signal_timestamp)
         
-        # Prédiction de la cote
-        prediction = w_avg - (volatility * margin)
-        prediction = max(prediction, 1.20)
-        
-        # Calcul du signal temporel (Délai en secondes avant le prochain vol)
-        # Basé sur la volatilité : plus c'est instable, plus le délai est court
-        base_delay = random.randint(45, 90) # Temps moyen entre deux tours
-        signal_delay = base_delay + int(volatility * 5)
-        
-        # Score de confiance
-        confidence = 100 - (volatility * 12)
-        confidence = max(min(int(confidence), 97), 35)
-        
-        return round(prediction, 2), confidence, signal_delay
+        return pred_cote, signal_time_obj
